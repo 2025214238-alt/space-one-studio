@@ -4,7 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import { routes } from "./routes";
 import "./styles.css";
 
-const router = createBrowserRouter(routes);
+const router = createBrowserRouter(routes, { basename: import.meta.env.BASE_URL });
 // The BAZE preview reads the app's pages from here. Keep this line; add pages in routes.tsx.
 (window as any).__baze = { ...(window as any).__baze, routes: router.routes };
 

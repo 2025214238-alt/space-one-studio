@@ -1,44 +1,96 @@
-// _base 첫 화면 견본: 소유자 설정(공지·영업시간)을 읽어 보여 주고, 문의를 서버에 저장한다. 새 템플릿은 통째로 바꾼다.
-import { useState, type FormEvent } from "react";
-import { content, settings } from "../content";
-import { api } from "../lib/api";
-import { usePublicSettings } from "../lib/data";
-import { describeSetting } from "../lib/settings";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { Armchair, ArrowDownToLine, ArrowRight, Check, CheckCheck, ChevronDown, ChevronRight, CircleHelp, DoorOpen, Grid2X2, Hand, House, Layers, LayoutDashboard, Leaf, Maximize, Minus, MousePointer2, Palette, Plus, Redo2, RotateCw, Search, Settings2, ShieldCheck, Sparkles, Trash2, Undo2, X } from 'lucide-react';
+import { catalog, FurnitureArt, initial, overlaps, size, spec, type Furniture, type FurnitureType } from '../lib/furniture';
+import '../studio.css';
 
-export default function Home() {
-  const s = usePublicSettings(settings);
-  const [sent, setSent] = useState<{ code?: string; error?: string; busy?: boolean }>({});
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    setSent({ busy: true });
-    try {
-      const r = await api<{ code: string }>("/api/inquiries", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(form))) });
-      form.reset();
-      setSent({ code: r.code });
-    } catch (err) { setSent({ error: (err as Error).message }); }
-  }
-  return (
-    <main className="mx-auto grid max-w-xl gap-8 px-gutter py-12">
-      {s.notice && <p className="rounded-control bg-ground-2 px-4 py-2 text-step--1" role="note">{s.notice}</p>}
-      <header>
-        <h1 className="font-display text-step-4 font-semibold leading-heading tracking-heading">{content.title}</h1>
-        <p className="mt-2 text-ink-2">
-          {describeSetting(settings.hours, s.hours)} · {describeSetting(settings.closed, s.closed)} 휴무
-          {!s.open && " · 지금은 온라인 접수를 잠시 멈췄어요"}
-        </p>
-      </header>
-      {sent.code ? (
-        <p className="rounded-card border border-ok/30 bg-ok/10 p-5" role="status">문의를 보냈어요. 접수 번호 <b className="font-mono">{sent.code}</b></p>
-      ) : (
-        <form onSubmit={submit} className="grid gap-4">
-          <label className="grid gap-1.5"><span className="font-medium">이름</span><input name="name" required autoComplete="name" className="px-3" /></label>
-          <label className="grid gap-1.5"><span className="font-medium">연락처</span><input name="contact" required placeholder="010-0000-0000" className="px-3" /></label>
-          <label className="grid gap-1.5"><span className="font-medium">문의 내용</span><textarea name="message" required rows={4} className="px-3 py-2" /></label>
-          {sent.error && <p className="text-step--1 text-danger" role="alert">{sent.error}</p>}
-          <button disabled={sent.busy || !s.open} className="h-control rounded-control bg-accent font-medium text-on-accent hover:opacity-90 disabled:opacity-50">{sent.busy ? "보내는 중…" : "문의 보내기"}</button>
-        </form>
-      )}
-    </main>
-  );
+const scenarios = [
+ {name:'나만의 첫 자취방',sub:'작지만, 온전히 나다운 공간',icon:'🏡',desc:'휴식과 작업이 함께하는 1인 주거 공간을 만들어 보세요.',types:['shelf','plant']},
+ {name:'아이돌 숙소',sub:'함께 살고, 함께 꿈꾸는 곳',icon:'🎤',desc:'침대와 대형 거울, 연습용 스피커로 생활과 연습을 함께해요.',types:['mirror','speaker']},
+ {name:'신혼부부의 집',sub:'두 사람의 취향이 만나는 공간',icon:'💍',desc:'소파와 테이블로 둘이 함께하는 시간을 위한 공간을 꾸며요.',types:['table','island']},
+ {name:'재택근무자의 방',sub:'집에서도 나만의 집중 모드',icon:'💻',desc:'책상과 수납장을 배치해 편안한 작업 동선을 설계해요.',types:['shelf','mirror']},
+ {name:'반려식물 하우스',sub:'초록과 함께 자라는 일상',icon:'🪴',desc:'식물과 수납장을 배치해 초록빛 휴식 공간을 만들어요.',types:['plant','shelf']},
+ {name:'홈트레이닝 스튜디오',sub:'매일의 건강한 루틴',icon:'🧘',desc:'매트와 거울 앞에 운동할 수 있는 여유를 남겨 보세요.',types:['mat','mirror']},
+ {name:'요리사의 작은 주방',sub:'맛있는 하루가 시작되는 곳',icon:'🍳',desc:'냉장고와 아일랜드 작업대 사이의 동선을 생각해 보세요.',types:['island','shelf']},
+ {name:'크리에이터 작업실',sub:'상상이 현실이 되는 작업대',icon:'🎨',desc:'책상과 스피커를 놓고 영감이 가득한 공간을 꾸며요.',types:['speaker','shelf']},
+];
+const palettes = [ {name:'파스텔',colors:['#B5CEBA','#B5CCD9','#D3BEDA','#E9BDBB','#E7D5A1','#F0EBDE']}, {name:'비비드',colors:['#D94F4F','#4C78CA','#E4AC37','#679859','#9D63AD','#E9894A']}, {name:'우드톤',colors:['#E0CCAD','#CFB798','#B79A79','#94795D','#705844','#424B45']} ];
+const valid = (f:Furniture, items:Furniture[]) => {const z=size(f);return f.x>=0&&f.y>=0&&f.x+z.w<=20&&f.y+z.h<=16&&!items.some(i=>i.id!==f.id&&overlaps({...f,...z},{...i,...size(i)}));};
+type Drag = { item:Furniture; sx:number;sy:number;ox:number;oy:number; moved:boolean;isNew:boolean; inside:boolean };
+function load(): {items:Furniture[];scenario:number} {try{const data=JSON.parse(localStorage.getItem('space-one-v1')||'null');if(data&&Array.isArray(data.items)&&data.items.every((f:Furniture)=>catalog.some(c=>c.type===f.type)&&Number.isFinite(f.x)&&Number.isFinite(f.y)&&Number.isFinite(f.rotation)&&Array.isArray(f.colors)&&f.colors.length===2)&&Number.isInteger(data.scenario)&&data.scenario>=0&&data.scenario<8)return data;}catch{}return {items:initial,scenario:0};}
+
+export default function Home(){
+ const [boot]=useState(load), [items,setItems]=useState<Furniture[]>(boot.items),[scenario,setScenario]=useState(boot.scenario);
+ const [category,setCategory]=useState('전체'),[search,setSearch]=useState(''),[selected,setSelected]=useState<string|null>(null),[drag,setDrag]=useState<Drag|null>(null);
+ const [showColors,setShowColors]=useState(false),[part,setPart]=useState(0),[grid,setGrid]=useState(true),[paths,setPaths]=useState(false),[zoom,setZoom]=useState(100),[modal,setModal]=useState<'scenarios'|'help'|null>(null);
+ const [toast,setToast]=useState(''),[past,setPast]=useState<Furniture[][]>([]),[future,setFuture]=useState<Furniture[][]>([]),[storageError,setStorageError]=useState(false);
+ const room=useRef<SVGSVGElement>(null), active=items.find(f=>f.id===selected), currentScenario=scenarios[scenario];
+ const blocked=items.filter(f=>overlaps({...f,...size(f)},{x:2,y:12,w:4,h:4}));
+ const area=items.reduce((sum,f)=>sum+spec(f.type).w*spec(f.type).h,0), used=Math.round(area/320*100);
+ const visible=catalog.filter(f=>(category==='전체'||(category==='시나리오'?currentScenario.types.includes(f.type):f.category===category))&&f.name.includes(search));
+ function commit(next:Furniture[]){setPast(p=>[...p.slice(-29),items]);setFuture([]);setItems(next);}
+ function notify(s:string){setToast(s);}
+ function undo(){if(!past.length)return;setFuture(f=>[items,...f]);setItems(past[past.length-1]);setPast(p=>p.slice(0,-1));setSelected(null);}
+ function redo(){if(!future.length)return;setPast(p=>[...p,items]);setItems(future[0]);setFuture(f=>f.slice(1));setSelected(null);}
+ function update(next:Furniture){if(valid(next,items))commit(items.map(f=>f.id===next.id?next:f));else notify('다른 가구나 벽에 닿아요. 여유 공간을 확보해 주세요.');}
+ function rotate(){if(active)update({...active,rotation:(active.rotation+90)%360});}
+ function remove(){if(active){commit(items.filter(f=>f.id!==active.id));setSelected(null);setShowColors(false);}}
+ function add(type:FurnitureType){const f=spec(type);let candidate:Furniture|undefined;for(let y=1;y<=16-f.h&&!candidate;y++)for(let x=1;x<=20-f.w&&!candidate;x++){const n:Furniture={id:crypto.randomUUID(),type,x,y,rotation:0,colors:[...f.colors]};if(valid(n,items))candidate=n;}if(candidate){commit([...items,candidate]);setSelected(candidate.id);setShowColors(false);notify('가구를 추가했어요. 끌어서 위치를 바꿔 보세요.');}else notify('배치할 공간이 부족해요. 다른 가구를 이동해 주세요.');}
+ useEffect(()=>{try{localStorage.setItem('space-one-v1',JSON.stringify({items,scenario}));setStorageError(false);}catch{setStorageError(true);}},[items,scenario]);
+ useEffect(()=>{if(toast){const t=setTimeout(()=>setToast(''),3500);return()=>clearTimeout(t);}},[toast]);
+ function point(clientX:number,clientY:number){const r=room.current!.getBoundingClientRect();return{x:(clientX-r.left)/r.width*940-70,y:(clientY-r.top)/r.height*790-65};}
+ function start(e:ReactPointerEvent,type:FurnitureType,f?:Furniture){if(e.button!==0)return;e.preventDefault();const p=point(e.clientX,e.clientY),d=spec(type);const item=f||{id:crypto.randomUUID(),type,x:0,y:0,rotation:0,colors:[...d.colors] as [string,string]};setDrag({item,sx:e.clientX,sy:e.clientY,ox:f?p.x/40-f.x:d.w/2,oy:f?p.y/40-f.y:d.h/2,moved:false,isNew:!f,inside:false});if(f){setSelected(f.id);setShowColors(false);} }
+ useEffect(()=>{
+  if(!drag)return;
+  const move=(e:PointerEvent)=>{e.preventDefault();const p=point(e.clientX,e.clientY);setDrag(d=>d?{...d,moved:d.moved||Math.hypot(e.clientX-d.sx,e.clientY-d.sy)>5,item:{...d.item,x:Math.round(p.x/40-d.ox),y:Math.round(p.y/40-d.oy)},inside:p.x>-40&&p.x<840&&p.y>-40&&p.y<680}:null);};
+  const end=()=>{if(drag.moved){if(drag.inside&&valid(drag.item,items)){commit(drag.isNew?[...items,drag.item]:items.map(f=>f.id===drag.item.id?drag.item:f));setSelected(drag.item.id);}else notify('배치할 수 없는 위치예요. 가구가 겹치거나 방 밖으로 나갔어요.');}else if(drag.isNew)add(drag.item.type);setDrag(null);};
+  const cancel=()=>setDrag(null);
+  window.addEventListener('pointermove',move,{passive:false});window.addEventListener('pointerup',end);window.addEventListener('pointercancel',cancel);
+  return()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);window.removeEventListener('pointercancel',cancel);};
+ },[drag,items]);
+ useEffect(()=>{const key=(e:KeyboardEvent)=>{if((e.target as HTMLElement).matches('input,select,textarea'))return;if(e.key==='Escape'){setDrag(null);setSelected(null);setModal(null);setShowColors(false);}if(modal)return;if(active&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();update({...active,x:active.x+(e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0),y:active.y+(e.key==='ArrowDown'?1:e.key==='ArrowUp'?-1:0)});}if(active&&e.key.toLowerCase()==='r')rotate();if(active&&(e.key==='Delete'||e.key==='Backspace')){e.preventDefault();remove();}if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();e.shiftKey?redo():undo();}};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);});
+ function exportDesign(){if(!room.current)return;const svg=room.current.cloneNode(true) as SVGSVGElement;svg.setAttribute('xmlns','http://www.w3.org/2000/svg');svg.setAttribute('width','1410');svg.setAttribute('height','1185');const blob=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='공간한칸-나의설계.svg';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('설계 이미지를 내보냈어요.');}
+ function renderFurniture(f:Furniture,ghost=false){const d=spec(f.type),z=size(f),isSelected=f.id===selected&&!ghost;return <g key={ghost?'ghost':f.id} transform={`translate(${f.x*40} ${f.y*40})`} data-furniture={ghost?'preview':f.id} role={ghost?undefined:'button'} tabIndex={ghost?undefined:0} aria-label={`${d.name} 선택`} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSelected(f.id);setShowColors(false);}}} onPointerDown={ghost?undefined:e=>{e.stopPropagation();start(e,f.type,f);}} style={{cursor:ghost?'none':'grab',opacity:drag?.moved&&drag.item.id===f.id&&!ghost?0.25:1}}>
+   {isSelected&&<><rect x="-7" y="-7" width={z.w*40+14} height={z.h*40+14} rx="7" fill="#6C9B7910" stroke="#4D8766" strokeWidth="2" strokeDasharray="6 4"/>{[[0,0],[z.w*40,0],[0,z.h*40],[z.w*40,z.h*40]].map(([x,y],i)=><rect key={i} x={x-4} y={y-4} width="8" height="8" rx="2" fill="white" stroke="#4D8766" strokeWidth="2"/>)}</>}
+   {ghost&&<rect x="-2" y="-2" width={z.w*40+4} height={z.h*40+4} rx="5" fill={valid(f,items)?'#58B78650':'#E7676755'} stroke={valid(f,items)?'#268453':'#CD4747'} strokeWidth="4"/>}
+   <g transform={`translate(${z.w*20} ${z.h*20}) rotate(${f.rotation}) translate(${-d.w*20} ${-d.h*20})`}><svg width={d.w*40} height={d.h*40} overflow="visible"><FurnitureArt type={f.type} colors={f.colors} uid={ghost?'ghost':f.id}/></svg></g>
+   {blocked.some(b=>b.id===f.id)&&<g transform={`translate(${z.w*40-8} 0)`}><circle r="15" fill="#FFF3D0" stroke="#C38A24"/><text textAnchor="middle" y="6" fontSize="20">⚠</text></g>}
+  </g>;}
+
+ return <div className="studio"><a className="skip-link" href="#design-workspace">설계 작업대로 바로가기</a>
+  <header className="topbar"><a className="brand" href={import.meta.env.BASE_URL} aria-label="공간 한 칸 홈"><span className="brand-icon"><House size={23}/></span><span>공간 한 칸<span className="brand-sub">나만의 공간을 만드는 즐거움</span></span></a><div className="project-breadcrumb">내 디자인 <ChevronRight size={14}/><strong>{currentScenario.name}</strong><span className="draft-label">자유 설계</span></div><div className="header-actions"><span className="autosave"><span className="status-dot"/>{storageError?'저장 공간을 확인해 주세요':'이 브라우저에 자동 저장'}</span><button className="btn export" onClick={exportDesign}><ArrowDownToLine size={16}/> 내보내기</button><button className="btn primary" onClick={()=>{try{localStorage.setItem('space-one-v1',JSON.stringify({items,scenario}));notify('디자인을 이 브라우저에 저장했어요.');}catch{notify('저장 공간이 부족해요. 이미지를 내보내 주세요.');}}}><Check size={17}/> 디자인 저장</button></div></header>
+  <nav className="rail" aria-label="설계 도구"><button className="rail-active" aria-label="공간 설계" title="공간 설계" onClick={()=>setSelected(null)}><LayoutDashboard/><span>설계</span></button><button aria-label="시나리오 선택" title="시나리오 선택" onClick={()=>setModal('scenarios')}><Layers/><span>시나리오</span></button><button aria-label="가구 색상 편집" title="가구 색상 편집" onClick={()=>{if(active)setShowColors(!showColors);else notify('방 안의 가구를 먼저 선택해 주세요.');}}><Palette/><span>컬러</span></button><div className="rail-bottom"><button aria-label="사용 방법" onClick={()=>setModal('help')}><CircleHelp/><span>도움말</span></button></div></nav>
+  <main className="workspace" id="design-workspace"><section className="workspace-heading"><div><div className="project-type"><span/> 나의 공간, 나의 취향</div><h1>{currentScenario.name}</h1><p>가구를 놓고, 색을 입혀 나만의 일상을 그려 보세요.</p></div><button className="scenario-switch" onClick={()=>setModal('scenarios')}><Layers size={15}/> 시나리오 변경 <ChevronDown size={14}/></button></section>
+   <div className="canvas-toolbar"><div className="toolbar-group"><button className="tool selected-tool" aria-label="선택 도구" title="가구를 클릭하거나 끌어서 이동해요" onClick={()=>notify('가구를 클릭해 선택하고, 끌어서 이동해 보세요.')}><MousePointer2 size={18}/></button><span className="tool-divider"/><button className="tool" aria-label="되돌리기" title="되돌리기" disabled={!past.length} onClick={undo}><Undo2 size={18}/></button><button className="tool" aria-label="다시 실행" title="다시 실행" disabled={!future.length} onClick={redo}><Redo2 size={18}/></button><span className="tool-divider"/><button className={`tool text-tool ${grid?'enabled':''}`} aria-pressed={grid} onClick={()=>setGrid(!grid)}><Grid2X2 size={16}/><span>그리드</span></button><span className="snap-badge"><span/> 스냅 켜짐</span></div><div className="toolbar-group"><button className={`tool text-tool ${paths?'enabled':''}`} aria-pressed={paths} onClick={()=>setPaths(!paths)}><DoorOpen size={16}/><span>동선 보기</span></button><span className="view-label">2D 탑뷰</span></div></div>
+   <section className={`canvas ${drag?'is-dragging':''}`} aria-label="가구 배치 작업대">
+    <div className="canvas-label"><span className="status-dot"/> 5.0 × 4.0 m <span className="canvas-label-divider"/> 20 m²</div>
+    <div className="floor-wrap" style={{transform:`scale(${zoom/100})`}}>
+     <svg ref={room} className="room-svg" viewBox="-70 -65 940 790" aria-label="5미터 곱하기 4미터 방 도면" onPointerDown={()=>{setSelected(null);setShowColors(false);}}>
+      <defs><pattern id="floor-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#D9E2D7" strokeWidth="1"/></pattern><pattern id="rug-lines" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0V8" stroke="#C2BAA31F" strokeWidth="2"/></pattern><filter id="floor-shadow" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="12" floodColor="#48624C" floodOpacity=".09"/></filter></defs>
+      <g stroke="#A6B6A8" strokeWidth="1" fill="none"><path d="M0 -24H800 M0 -31V-17 M800 -31V-17 M-26 0V640 M-33 0H-19 M-33 640H-19"/></g><g fill="#69786B" fontSize="14" fontFamily="Pretendard, sans-serif"><rect x="355" y="-37" width="90" height="25" fill="#F1F5EF"/><text x="400" y="-20" textAnchor="middle">5,000 mm</text><text x="-38" y="320" textAnchor="middle" transform="rotate(-90 -38 320)">4,000 mm</text></g>
+      <rect x="-6" y="-6" width="812" height="652" fill="#FCFCF6" stroke="#C0CBBA" strokeWidth="12" filter="url(#floor-shadow)"/>
+      <rect width="800" height="640" fill={grid?'url(#floor-grid)':'#FCFCF6'}/>
+      <rect x="424" y="351" width="320" height="230" rx="36" fill="#E6E1D1" opacity=".7"/><rect x="432" y="359" width="304" height="214" rx="30" fill="url(#rug-lines)"/><path d="M449 366H719M449 566H719" stroke="#D0C8B5" strokeDasharray="3 5"/>
+      <rect x="330" y="-8" width="220" height="16" fill="#DFEBE2" stroke="#A3B9AA" strokeWidth="2"/><path d="M337 0H543 M440 -7V7" stroke="#8EA898" strokeWidth="2"/><path d="M346 11L308 109H531L543 11" fill="#E8EDCF" opacity=".22"/>
+      {paths&&<><rect x="80" y="480" width="160" height="160" rx="5" fill={blocked.length?'#EB9C7930':'#70AF8E25'} stroke={blocked.length?'#CC8155':'#71A387'} strokeDasharray="8 6" strokeWidth="2"/><text x="160" y="465" textAnchor="middle" fontSize="15" fill="#647A68">출입문 여유 공간</text></>}
+      <rect x="80" y="632" width="160" height="17" fill="#F1F5EF"/>
+      <path d="M80 640V480 A160 160 0 0 1 240 640" fill="#EBEFE420" stroke="#A1AF96" strokeWidth="1.5" strokeDasharray="5 4"/><path d="M80 640V480" stroke="#9DAE91" strokeWidth="6"/><circle cx="80" cy="640" r="5" fill="#9DAE91"/>
+      <text x="160" y="690" textAnchor="middle" fontSize="14" fill="#69786B">출입문</text><path d="M160 672V650 M154 657L160 650L166 657" fill="none" stroke="#A4B29F" strokeWidth="1.5"/>
+      {items.map(f=>renderFurniture(f))}{drag?.moved&&drag.inside&&renderFurniture(drag.item,true)}
+     </svg>
+    </div>
+    {active&&!drag?.moved&&<div className="selection-panel"><div className="selection-title"><span>{spec(active.type).name}</span><small>{spec(active.type).w*25} × {spec(active.type).h*25} cm</small><button aria-label="선택 닫기" onClick={()=>{setSelected(null);setShowColors(false);}}><X size={15}/></button></div><div className="selection-actions"><button onClick={rotate}><RotateCw size={16}/> 회전 <kbd>R</kbd></button><button className={showColors?'color-active':''} onClick={()=>{setShowColors(!showColors);setPart(0);}}><Palette size={16}/> 색상 변경</button><button className="delete-action" onClick={remove}><Trash2 size={16}/> 삭제</button></div>
+     {showColors&&<div className="color-picker"><div className="part-tabs">{spec(active.type).parts.map((p,i)=><button className={part===i?'active':''} key={p} onClick={()=>setPart(i)}>{p}</button>)}</div>{palettes.map(p=><div className="palette-row" key={p.name}><span>{p.name}</span><div>{p.colors.map(c=><button title={`${p.name} ${c}`} aria-label={`${spec(active.type).parts[part]} ${c}`} aria-pressed={active.colors[part]===c} key={c} style={{background:c}} onClick={()=>{const colors=[...active.colors] as [string,string];colors[part]=c;commit(items.map(f=>f.id===active.id?{...f,colors}:f));}}>{active.colors[part]===c&&<Check size={14} color="#263D37"/>}</button>)}</div></div>)}</div>}
+    </div>}
+    <div className="canvas-bottom"><div className="grid-hint"><Grid2X2 size={14}/><span>한 칸 = 25 cm</span></div><div className="zoom"><button aria-label="축소" disabled={zoom<=70} onClick={()=>setZoom(z=>z-10)}><Minus size={16}/></button><span>{zoom}%</span><button aria-label="확대" disabled={zoom>=130} onClick={()=>setZoom(z=>z+10)}><Plus size={16}/></button><span className="tool-divider"/><button aria-label="화면에 맞추기" onClick={()=>setZoom(100)}><Maximize size={16}/></button></div></div>
+   </section>
+   <div className="room-status"><div><span className={`status-icon ${blocked.length?'warning':''}`}>{blocked.length?'⚠':<ShieldCheck size={18}/>}</span><span>{blocked.length?<><strong>출입문이 막혀 있어요</strong><small>입구 주변 가구를 옮겨 주세요.</small></>:<><strong>편안한 동선이에요</strong><small>출입문 주변에 여유 공간이 있어요.</small></>}</span></div><span className="placed-summary">배치한 가구 <strong>{items.length}</strong><span/>공간 사용률 <strong>{used}%</strong></span></div>
+   <div className="workspace-footer"><span><MousePointer2 size={13}/> 드래그하여 배치</span><span><RotateCw size={13}/> R 회전</span><span><Trash2 size={13}/> Delete 삭제</span><span className="footer-message">한 칸씩, 나다운 공간으로.</span></div>
+  </main>
+  <aside className="catalog"><div className="catalog-heading"><div><Armchair size={21}/><h2>가구 라이브러리</h2></div><span>{catalog.length}</span></div><p className="catalog-sub">마음에 드는 가구를 방 안으로 끌어 놓으세요.</p><label className="search-field"><Search size={17}/><input aria-label="가구 검색" value={search} onChange={e=>setSearch(e.target.value)} placeholder="어떤 가구를 찾으세요?"/><span>⌕</span></label><div className="category-tabs" role="tablist" aria-label="가구 카테고리">{['전체','침실','거실','주방','시나리오'].map(c=><button key={c} role="tab" aria-selected={category===c} className={category===c?'active':''} onClick={()=>setCategory(c)}>{c}{c==='시나리오'&&<span className="tab-dot"/>}</button>)}</div>
+   <div className="catalog-scroll"><div className="collection-heading"><span>{category==='전체'?'공간의 기본이 되는 가구':category==='시나리오'?`${currentScenario.name} 전용 가구`:`${category}에 어울리는 가구`}</span><small>{visible.length}개</small></div><div className="furniture-grid">{visible.map(f=><button key={f.type} className="furniture-card" data-catalog={f.type} aria-label={`${f.name} 추가 또는 드래그`} onPointerDown={e=>start(e,f.type)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();add(f.type);}}}><div className={`furniture-thumbnail thumb-${f.type}`}><FurnitureArt type={f.type} colors={f.colors} uid={`catalog-${f.type}`}/><span className="add-furniture"><Plus size={14}/></span>{f.category==='전용'&&<span className="special-mark"><Sparkles size={11}/> 전용</span>}</div><span className="furniture-name">{f.name}</span><span className="furniture-dimensions">{f.w*25} × {f.h*25} cm</span><span className="material-dots">{f.colors.map((c,i)=><i key={i} style={{background:c}}/>)}<i style={{background:'#E9E6DD'}}/><small>+16</small></span></button>)}</div>{!visible.length&&<p className="empty-results">찾는 가구가 없어요. 다른 이름으로 검색해 주세요.</p>}</div>
+   <button className="scenario-card" onClick={()=>setModal('scenarios')}><span className="scenario-illustration">{currentScenario.icon}</span><span><small>오늘은 어떤 공간을 만들까요?</small><strong>8가지 라이프 시나리오</strong><span>새로운 공간에 도전하기 <ArrowRight size={13}/></span></span><ChevronRight size={17}/></button><div className="catalog-tip"><Sparkles size={15}/><p>가구를 선택하면 <strong>부위별로 색상을</strong><br/>바꿀 수 있어요. 나만의 조합을 찾아보세요!</p></div>
+  </aside>
+  {toast&&<div className="toast" role="status"><CheckCheck size={18}/>{toast}</div>}{drag?.moved&&!drag.inside&&<div className="drag-chip"><Hand size={16}/> 방 안으로 끌어 놓으세요</div>}
+  {modal&&<div className="modal-backdrop" onClick={()=>setModal(null)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Tab'){const controls=e.currentTarget.querySelectorAll<HTMLElement>('button,[href],input');const first=controls[0],last=controls[controls.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}}}><button className="modal-close" autoFocus aria-label="닫기" onClick={()=>setModal(null)}><X size={20}/></button>{modal==='scenarios'?<><span className="modal-symbol"><Layers size={24}/></span><h2 id="modal-title">어떤 일상을 설계할까요?</h2><p>시나리오마다 다른 전용 가구를 만나 보세요.<br/>지금 배치한 가구는 그대로 유지돼요.</p><div className="scenario-grid">{scenarios.map((s,i)=><button key={s.name} className={scenario===i?'active':''} onClick={()=>{setScenario(i);setCategory('시나리오');setModal(null);notify(s.desc);}}><span>{s.icon}</span><strong>{s.name}</strong><small>{s.sub}</small>{scenario===i&&<Check size={15}/>}</button>)}</div></>:<><span className="modal-symbol"><CircleHelp size={24}/></span><h2 id="modal-title">한 칸씩, 쉽게 시작해요</h2><div className="help-list"><p><MousePointer2/> <span><strong>가구 배치하기</strong>오른쪽 가구를 끌어 방 안에 놓으세요. 클릭하면 빈 공간에 추가돼요. 모바일에서도 끌어 놓을 수 있어요.</span></p><p><Grid2X2/><span><strong>초록은 가능, 빨강은 불가능</strong>한 칸 25cm에 맞춰 배치돼요. 겹치거나 방 밖으로 나가면 원래 위치로 돌아가요.</span></p><p><Palette/><span><strong>나만의 색상 조합</strong>가구를 선택하고 색상 변경을 누르세요. 프레임과 방석 등 부위별로 따로 꾸밀 수 있어요.</span></p><p><DoorOpen/><span><strong>동선도 확인하세요</strong>출입문 앞 1m × 1m 공간에 가구가 들어오면 경고해요. 동선 보기로 확인할 수 있어요.</span></p><p><Settings2/><span><strong>키보드로 더 정밀하게</strong>Tab과 Enter로 가구를 선택하고, 방향키로 한 칸씩 이동해요. R은 회전, Delete는 삭제, Ctrl/⌘+Z는 되돌리기예요.</span></p><p><Leaf/><span><strong>다음에 이어서 만들어요</strong>설계는 현재 브라우저에 자동 저장돼요. 다른 기기와는 공유되지 않아요.</span></p></div></>}</section></div>}
+ </div>;
 }

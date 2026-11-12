@@ -4,7 +4,7 @@ import { defineSettings } from "./lib/settings";
 import { defineStatuses } from "./lib/status";
 
 export const content = {
-  title: "BAZE 템플릿",
+  title: "공간 한 칸",
   owner: {
     title: "가게 관리",
     members: ["정은재", "한도윤"],
