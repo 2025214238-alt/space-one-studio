@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F7F9F7" />
+    <title>공간 한 칸 — 나만의 공간 설계</title>
+    <meta name="description" content="가구를 배치하고 색을 입히며 나만의 주거 공간을 설계하는 2D 시뮬레이션 게임이에요." />
+    <meta property="og:title" content="공간 한 칸 — 나만의 공간 설계" />
+    <meta property="og:description" content="한 칸씩 채워가는 나만의 공간. 가구 배치부터 부위별 색상까지 자유롭게 설계해 보세요." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://2025214238-alt.github.io/space-one-studio/og.png" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="400" />
+    <meta property="og:url" content="https://2025214238-alt.github.io/space-one-studio/" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="/space-one-studio/favicon.svg" />
+    <!-- Body face: Pretendard Variable, always. -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+    <!--
+      Second family (display / serif), exactly one per template. Two ways:
+
+      A. Google Fonts (OFL): keep the two preconnects below and add ONE stylesheet link with
+         display=swap and only the weights you use, e.g.
+         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400&display=swap" />
+         Korean: Noto Serif KR · Gowun Batang · Nanum Myeongjo · Hahmlet · Song Myung · Black Han Sans ·
+         Do Hyeon · Gothic A1 · IBM Plex Sans KR · Bagel Fat One · Gugi
+         Latin display for wordmarks / numerals: Inter Tight · Instrument Serif · Space Grotesk ·
+         Bebas Neue · Anton · JetBrains Mono · IBM Plex Mono
+
+      B. Self-hosted: put the woff2 under public/fonts/ with its license file beside it, declare
+         @font-face in src/styles.css with font-display: swap, and delete the two preconnects.
+
+      Then point the token at it in src/styles.css:
+         @theme static { --font-display: "Noto Serif KR", var(--font-body); }
+      and use it through `font-display` / `.display` only. check.mjs fails the build if a
+      declared family never loads, so the token must name a face this page actually links.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <script type="module" crossorigin src="/space-one-studio/assets/index-3wpyKkIt.js"></script>
+    <link rel="stylesheet" crossorigin href="/space-one-studio/assets/index-Bjz4-HEQ.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
