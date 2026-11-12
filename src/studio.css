@@ -93,6 +93,11 @@ button:focus-visible,a:focus-visible,[role=button]:focus-visible,input:focus-vis
 .thumb-desk,.thumb-sofa,.thumb-shelf,.thumb-island { padding:21px 12px; }
 .thumb-mirror { padding:35px 12px; }
 .thumb-fridge { padding:18px 31px; }
+.thumb-wardrobe,.thumb-dresser,.thumb-tvStand,.thumb-shoeRack,.thumb-clothesRack,.thumb-vanity,.thumb-bookcase,.thumb-plantStand,.thumb-dumbbellRack { padding:24px 12px; }
+.thumb-coffeeTable,.thumb-sink,.thumb-stove { padding:21px 12px; }
+.thumb-bunkBed,.thumb-treadmill { padding:12px 34px; }
+.thumb-recordingDesk { padding:22px 10px; }
+.thumb-nightstand,.thumb-stool { padding:22px 32px; }
 .add-furniture { position:absolute; bottom:6px; right:6px; width:19px; height:19px; border:1px solid #E2E8DA; background:#FFFFFFE0; border-radius:50%; display:grid; place-items:center; color:#88977B; }
 .furniture-name { display:block; font-size:11px; color:#4A5D43; font-weight:550; margin-top:8px; letter-spacing:-.2px; }
 .furniture-dimensions { display:block; color:#929C86; font-size:10px; margin-top:1px; }
