@@ -4,14 +4,14 @@ import { catalog, FurnitureArt, initial, overlaps, size, spec, type Furniture, t
 import '../studio.css';
 
 const scenarios = [
- {name:'나만의 첫 자취방',sub:'작지만, 온전히 나다운 공간',icon:'🏡',desc:'휴식과 작업이 함께하는 1인 주거 공간을 만들어 보세요.',types:['shelf','plant']},
- {name:'아이돌 숙소',sub:'함께 살고, 함께 꿈꾸는 곳',icon:'🎤',desc:'침대와 대형 거울, 연습용 스피커로 생활과 연습을 함께해요.',types:['mirror','speaker']},
- {name:'신혼부부의 집',sub:'두 사람의 취향이 만나는 공간',icon:'💍',desc:'소파와 테이블로 둘이 함께하는 시간을 위한 공간을 꾸며요.',types:['table','island']},
- {name:'재택근무자의 방',sub:'집에서도 나만의 집중 모드',icon:'💻',desc:'책상과 수납장을 배치해 편안한 작업 동선을 설계해요.',types:['shelf','mirror']},
- {name:'반려식물 하우스',sub:'초록과 함께 자라는 일상',icon:'🪴',desc:'식물과 수납장을 배치해 초록빛 휴식 공간을 만들어요.',types:['plant','shelf']},
- {name:'홈트레이닝 스튜디오',sub:'매일의 건강한 루틴',icon:'🧘',desc:'매트와 거울 앞에 운동할 수 있는 여유를 남겨 보세요.',types:['mat','mirror']},
- {name:'요리사의 작은 주방',sub:'맛있는 하루가 시작되는 곳',icon:'🍳',desc:'냉장고와 아일랜드 작업대 사이의 동선을 생각해 보세요.',types:['island','shelf']},
- {name:'크리에이터 작업실',sub:'상상이 현실이 되는 작업대',icon:'🎨',desc:'책상과 스피커를 놓고 영감이 가득한 공간을 꾸며요.',types:['speaker','shelf']},
+ {name:'나만의 첫 자취방',sub:'작지만, 온전히 나다운 공간',icon:'🏡',desc:'협탁과 현관 벤치, 의상 행거로 작은 공간을 알차게 꾸며요.',types:['shelf','plant','nightstand','shoeRack','clothesRack']},
+ {name:'아이돌 숙소',sub:'함께 살고, 함께 꿈꾸는 곳',icon:'🎤',desc:'이층 침대와 의상 행거, 화장대로 생활과 무대 준비를 함께해요.',types:['mirror','speaker','bunkBed','clothesRack','vanity']},
+ {name:'신혼부부의 집',sub:'두 사람의 취향이 만나는 공간',icon:'💍',desc:'러브시트와 다이닝 테이블로 둘이 함께하는 시간을 꾸며요.',types:['table','island','loveseat','vanity','diningTable']},
+ {name:'재택근무자의 방',sub:'집에서도 나만의 집중 모드',icon:'💻',desc:'작업 의자와 서가 파티션으로 편안한 집중 공간을 설계해요.',types:['shelf','mirror','officeChair','bookcase']},
+ {name:'반려식물 하우스',sub:'초록과 함께 자라는 일상',icon:'🪴',desc:'플랜트 스탠드와 미니 온실로 초록빛 휴식 공간을 만들어요.',types:['plant','shelf','plantStand','greenhouse']},
+ {name:'홈트레이닝 스튜디오',sub:'매일의 건강한 루틴',icon:'🧘',desc:'러닝머신과 덤벨 랙, 매트로 나만의 운동 공간을 꾸며요.',types:['mat','mirror','treadmill','dumbbellRack']},
+ {name:'요리사의 작은 주방',sub:'맛있는 하루가 시작되는 곳',icon:'🍳',desc:'오븐과 싱크 작업대, 인덕션 사이의 동선을 생각해 보세요.',types:['island','shelf','oven','sink','stove']},
+ {name:'크리에이터 작업실',sub:'상상이 현실이 되는 작업대',icon:'🎨',desc:'녹음 데스크와 작업 의자, 스피커로 창작 공간을 꾸며요.',types:['speaker','shelf','recordingDesk','officeChair','bookcase']},
 ];
 const palettes = [ {name:'파스텔',colors:['#B5CEBA','#B5CCD9','#D3BEDA','#E9BDBB','#E7D5A1','#F0EBDE']}, {name:'비비드',colors:['#D94F4F','#4C78CA','#E4AC37','#679859','#9D63AD','#E9894A']}, {name:'우드톤',colors:['#E0CCAD','#CFB798','#B79A79','#94795D','#705844','#424B45']} ];
 const valid = (f:Furniture, items:Furniture[]) => {const z=size(f);return f.x>=0&&f.y>=0&&f.x+z.w<=20&&f.y+z.h<=16&&!items.some(i=>i.id!==f.id&&overlaps({...f,...z},{...i,...size(i)}));};

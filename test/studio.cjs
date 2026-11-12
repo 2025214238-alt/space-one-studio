@@ -1,11 +1,12 @@
 const { chromium } = require('/usr/local/lib/node_modules/playwright');
 const assert = require('node:assert/strict');
+const site=process.env.STUDIO_URL||'http://localhost:5173';
 (async()=>{
  const browser=await chromium.launch({args:['--no-sandbox']});
  try {
   const page=await browser.newPage({viewport:{width:1440,height:900}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('http://localhost:5173');
+  await page.goto(site);
   const state=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('space-one-v1')));
   const coords=async(x,y)=>{const b=await page.locator('.room-svg').boundingBox();return{x:b.x+(x*40+70)/940*b.width,y:b.y+(y*40+65)/790*b.height};};
   const drop=async(start,end)=>{await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(end.x,end.y,{steps:16});await page.waitForTimeout(50);};
@@ -63,7 +64,7 @@ const assert = require('node:assert/strict');
   assert.deepEqual(errors,[]);
   console.log('PASS: drag/drop, snap, green/red previews, collision and bounds rollback, doorway warning, independent colors, rotate/delete, undo/redo, 8 scenarios, persistence, export, keyboard.');
   const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const mp=await mobile.newPage();
-  await mp.goto('http://localhost:5173');
+  await mp.goto(site);
   assert.equal(await mp.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await mp.locator('[data-catalog="chair"]').tap();
   await mp.waitForTimeout(100);

@@ -1,7 +1,9 @@
 import { memo } from 'react';
-export type FurnitureType = 'bed' | 'desk' | 'chair' | 'sofa' | 'fridge' | 'mirror' | 'speaker' | 'plant' | 'table' | 'shelf' | 'mat' | 'island';
+import { extraCatalog, ExtraFurnitureArt } from './furniture-extra';
+export type FurnitureType = 'bed' | 'desk' | 'chair' | 'sofa' | 'fridge' | 'mirror' | 'speaker' | 'plant' | 'table' | 'shelf' | 'mat' | 'island' | 'wardrobe' | 'nightstand' | 'dresser' | 'armchair' | 'coffeeTable' | 'tvStand' | 'diningTable' | 'stool' | 'sink' | 'stove' | 'washer' | 'shoeRack' | 'bunkBed' | 'clothesRack' | 'vanity' | 'loveseat' | 'officeChair' | 'bookcase' | 'plantStand' | 'greenhouse' | 'treadmill' | 'dumbbellRack' | 'oven' | 'recordingDesk';
 export type Furniture = { id: string; type: FurnitureType; x: number; y: number; rotation: number; colors: [string, string] };
-export const catalog: { type: FurnitureType; name: string; category: string; w: number; h: number; parts: [string, string]; colors: [string,string] }[] = [
+export type FurnitureDefinition = { type: FurnitureType; name: string; category: string; w: number; h: number; parts: [string, string]; colors: [string,string] };
+export const catalog: FurnitureDefinition[] = [
   { type:'bed', name:'포근한 싱글 침대', category:'침실', w:5, h:7, parts:['프레임','침구'], colors:['#C6A889','#B5CEBA'] },
   { type:'desk', name:'우드 데스크', category:'침실', w:6, h:3, parts:['상판','프레임'], colors:['#CFB798','#94795D'] },
   { type:'chair', name:'데일리 체어', category:'거실', w:2, h:2, parts:['프레임','방석'], colors:['#B79A79','#E3B08C'] },
@@ -14,6 +16,7 @@ export const catalog: { type: FurnitureType; name: string; category: string; w: 
   { type:'speaker', name:'연습용 스피커', category:'전용', w:2, h:2, parts:['본체','유닛'], colors:['#444B4A','#82908B'] },
   { type:'mat', name:'스트레칭 매트', category:'전용', w:3, h:6, parts:['매트','테두리'], colors:['#C7B3CF','#9988A3'] },
   { type:'island', name:'아일랜드 작업대', category:'전용', w:5, h:3, parts:['상판','프레임'], colors:['#E1D8C7','#A2B9AC'] },
+  ...extraCatalog,
 ];
 export const spec = (type: FurnitureType) => catalog.find(f => f.type === type)!;
 export const size = (f: Furniture) => { const d = spec(f.type); return f.rotation % 180 ? {w:d.h,h:d.w} : {w:d.w,h:d.h}; };
@@ -31,7 +34,8 @@ export const FurnitureArt = memo(function FurnitureArt({type, colors, uid='art'}
  const stroke='#685F514D';
  return <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="100%" overflow="visible" aria-hidden="true">
   <defs><filter id={`shadow-${uid}`} x="-30%" y="-30%" width="170%" height="180%"><feDropShadow dx="3" dy="6" stdDeviation="4" floodColor="#344E3E" floodOpacity=".14" /></filter></defs>
-  <g filter={`url(#shadow-${uid})`} stroke={stroke} strokeWidth="2" strokeLinejoin="round">
+   <g filter={`url(#shadow-${uid})`} stroke={stroke} strokeWidth="2" strokeLinejoin="round">
+   <ExtraFurnitureArt type={type} colors={colors}/>
   {type==='bed' && <><rect x="3" y="3" width={w-6} height={h-6} rx="8" fill={a}/><rect x="12" y="18" width={w-24} height={h-28} rx="7" fill="#F4F1E9"/><rect x="20" y="29" width="73" height="49" rx="9" fill="#FFFCF5"/><rect x="107" y="29" width="73" height="49" rx="9" fill="#FFFCF5"/><path d={`M12 96 Q100 87 188 96 V${h-17} Q100 ${h-10} 12 ${h-17}Z`} fill={b}/><path d="M14 108 Q100 101 186 108" fill="none" stroke="#FFFFFF75" strokeWidth="8"/><path d={`M26 126 V${h-32} M175 126 V${h-32}`} opacity=".15"/></>}
   {type==='desk' && <><rect x="13" y="9" width={w-26} height={h-7} rx="4" fill={b}/><rect x="2" y="2" width={w-4} height={h-15} rx="7" fill={a}/><path d={`M15 18 H${w-15} M15 24 H${w-15}`} opacity=".16"/><rect x="86" y="18" width="76" height="45" rx="3" fill="#64756E"/><rect x="91" y="22" width="66" height="35" rx="2" fill="#C8D8D0"/><path d="M123 63 V72 M109 73 H137" stroke="#6F796E" strokeWidth="4"/><rect x="90" y="81" width="65" height="13" rx="3" fill="#EEEDE4"/><rect x="20" y="59" width="36" height="41" rx="3" fill="#EEE9DC" transform="rotate(-7 38 80)"/><path d="M28 70 H46 M28 78 H43" opacity=".25"/><circle cx="201" cy="74" r="13" fill="#F7F3E7"/><circle cx="201" cy="74" r="8" fill="#A48B6D"/></>}
   {type==='chair' && <><rect x="8" y="8" width="64" height="62" rx="14" fill={a}/><rect x="15" y="27" width="50" height="44" rx="14" fill={b}/><rect x="7" y="3" width="66" height="21" rx="9" fill={a}/><path d="M15 11 H65" stroke="#FFFFFF55"/><path d="M9 38 V61 M71 38 V61" stroke={a} strokeWidth="9"/></>}
