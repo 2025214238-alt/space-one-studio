@@ -4,7 +4,7 @@ import { defineSettings } from "./lib/settings";
 import { defineStatuses } from "./lib/status";
 
 export const content = {
-  title: "공간 한 칸",
+  title: "AI HOUSE SURVIVAL",
   owner: {
     title: "가게 관리",
     members: ["정은재", "한도윤"],
